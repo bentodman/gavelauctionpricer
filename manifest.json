@@ -1,0 +1,12 @@
+{
+    "manifest_version": 3,
+    "name": "Gavel Auction Price Calculator",
+    "version": "3.0",
+    "description": "Adjusts auction page to show final price including VAT and fees.",
+    "permissions": ["activeTab"],
+    "content_scripts": [{
+      "matches": ["https://www.gavelauctionsonline.com/*"], 
+      "js": ["content.js"]
+    }]
+  }
+  
