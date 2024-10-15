@@ -19,182 +19,166 @@ function calculateAdjustedPrice(currentBid) {
 }
 
 function processAuctionListings() {
-    // Get all elements with class "lot-grid-column" on gallery pages
-    var auctionListings = document.querySelectorAll('.lot-grid-column');
-
-    // Loop through each listing
-    auctionListings.forEach(function(listing) {
+    // Function to update prices for a single listing
+    function updateListing(listing) {
         // Retrieve data from the listing
-        var listingTitle = listing.querySelector('.lot-grid-header').innerText;
         var listingPrice = parseFloat(listing.querySelector('.current-bid-value').getAttribute('data-current-bid'));
-        var maxBid = parseFloat(listing.querySelector('.your-maximum-bid-value').getAttribute('data-your-maximum-bid'));
-        var lotNumber = listing.querySelector('.lot-number').innerText;
+        var maxBid = parseFloat(listing.querySelector('.your-maximum-bid-value')?.getAttribute('data-your-maximum-bid') || listing.querySelector('.user-maximum-bid-value')?.innerText);
 
-        // Check if current bid exists and it's not NaN or 0
+        // Update current bid
         if (!isNaN(listingPrice) && listingPrice !== 0) {
-            // Calculate adjusted prices
             var listingPriceWillPay = calculateAdjustedPrice(listingPrice);
-            
-            // Create a new element for displaying adjusted prices
-            var adjustedPriceElement = document.createElement('div');
-            adjustedPriceElement.classList.add('item', 'current-bid-will-pay');
-            adjustedPriceElement.innerHTML = `
-                <div class="content flexable">
-                    <div class="meta current-bid-label list-item-info-header">After Fees</div>
-                    <div class="description description-en-gb">
-                        <span class="current-bid-value">${listingPriceWillPay.toFixed(2)}</span>
-                        <span class="current-bid-currency">GBP</span>
-                    </div>
-                </div>
-            `;
-
-            // Insert the adjusted price element after the current bid section
-            listing.querySelector('.item.current-bid').insertAdjacentElement('afterend', adjustedPriceElement);
+            updateOrCreateAdjustedPriceElement(listing, '.inline.fields.current-bid, .item.current-bid', 'current-bid-will-pay', 'After Fees', listingPriceWillPay);
         }
 
-        
-        // Check if max bid exists and it's not NaN or 0
+        // Update max bid
         if (!isNaN(maxBid) && maxBid !== 0) {
-            // Calculate adjusted prices
             var maxBidWillPay = calculateAdjustedPrice(maxBid);
-            
-            // Create a new element for displaying adjusted prices
-            var adjustedPriceElement = document.createElement('div');
-            adjustedPriceElement.classList.add('item', 'max-bid-will-pay');
-            adjustedPriceElement.innerHTML = `
-                <div class="content flexable">
-                    <div class="meta current-bid-label list-item-info-header">After Fees</div>
-                    <div class="description description-en-gb">
-                        <span class="current-bid-value">${maxBidWillPay.toFixed(2)}</span>
-                        <span class="current-bid-currency">GBP</span>
-                    </div>
-                </div>
-            `;
-
-            // Insert the adjusted price element after the current bid section
-            listing.querySelector('.item.your-maximum-bid').insertAdjacentElement('afterend', adjustedPriceElement);
+            updateOrCreateAdjustedPriceElement(listing, '.inline.fields.user-maximum-bid, .item.your-maximum-bid', 'max-bid-will-pay', 'After Fees', maxBidWillPay);
         }
+    }
 
-    });
-
-        // Get all elements with class "lot-details" on singular pages
-        var auctionListings = document.querySelectorAll('.lot-details ');
-
-        // Loop through each listing
-        auctionListings.forEach(function(listing) {
-            // Retrieve data from the listing
-            var listingPrice = parseFloat(listing.querySelector('.current-bid-value').getAttribute('data-current-bid'));
-            var maxBid = parseFloat(listing.querySelector('.user-maximum-bid-value').innerText);
-    
-            // Check if current bid exists and it's not NaN or 0
-            if (!isNaN(listingPrice) && listingPrice !== 0) {
-                // Calculate adjusted prices
-                var listingPriceWillPay = calculateAdjustedPrice(listingPrice);
-                
-                // Create a new element for displaying adjusted prices
+    // Helper function to update or create adjusted price element
+    function updateOrCreateAdjustedPriceElement(listing, selector, className, label, price) {
+        var existingElement = listing.querySelector(`.${className}`);
+        if (existingElement) {
+            existingElement.querySelector('.current-bid-value').textContent = price.toFixed(2);
+        } else {
+            var targetElement = listing.querySelector(selector);
+            if (targetElement) {
                 var adjustedPriceElement = document.createElement('div');
-                adjustedPriceElement.classList.add('inline', 'current-bid-will-pay');
-                adjustedPriceElement.innerHTML = `
-                <div class="inline fields current-bid">
-                <div class="seven wide field">
-                    <label current-bid-content="Current bid after fees" closing-bid-content="Closing bid after fees" class="current-bid-label"></label>
-                </div>
-                <div class="seven wide field">
-                    <span class="current-bid-value" data-current-bid="76.00">${listingPriceWillPay.toFixed(2)}</span>
-                    <span class="current-bid-currency">GBP</span>
-                </div>
-                `;
-    
-                // Insert the adjusted price element after the current bid section
-                listing.querySelector('.inline.fields.current-bid').insertAdjacentElement('afterend', adjustedPriceElement);
-            }
-    
-            
-            // Check if max bid exists and it's not NaN or 0
-            if (!isNaN(maxBid) && maxBid !== 0) {
-                // Calculate adjusted prices
-                var maxBidWillPay = calculateAdjustedPrice(maxBid);
+                adjustedPriceElement.classList.add('inline', 'fields', className);
                 
-                // Create a new element for displaying adjusted prices
-                var adjustedPriceElement = document.createElement('div');
-                adjustedPriceElement.classList.add('inline', 'max-bid-will-pay');
-                adjustedPriceElement.innerHTML = `
-                <div class="inline fields user-maximum-bid">
-                <div class="seven wide field">
-                <label>Your maximum bid after fees</label>
-                </div>
-                <div class="nine wide field">
-                    <span class="user-maximum-bid-value" data-current-bid="76.00">${maxBidWillPay.toFixed(2)}</span>
-                    <span class="user-maximum-bid-currency">GBP</span>
-                </div>
-                `;
-    
-                // Insert the adjusted price element after the current bid section
-                listing.querySelector('.fields.user-maximum-bid').insertAdjacentElement('afterend', adjustedPriceElement);
+                if (targetElement.classList.contains('inline')) {
+                    // For singular item page
+                    adjustedPriceElement.innerHTML = `
+                        <div class="seven wide field">
+                            <label>${label}</label>
+                        </div>
+                        <div class="nine wide field">
+                            <span class="current-bid-value">${price.toFixed(2)}</span>
+                            <span class="current-bid-currency">GBP</span>
+                        </div>
+                    `;
+                } else {
+                    // For gallery page
+                    adjustedPriceElement.innerHTML = `
+                        <div class="content flexable">
+                            <div class="meta current-bid-label list-item-info-header">${label}</div>
+                            <div class="description description-en-gb">
+                                <span class="current-bid-value">${price.toFixed(2)}</span>
+                                <span class="current-bid-currency">GBP</span>
+                            </div>
+                        </div>
+                    `;
+                }
+                targetElement.insertAdjacentElement('afterend', adjustedPriceElement);
+            } else {
+                console.log(`Target element not found for selector: ${selector}`);
             }
-    
+        }
+    }
+
+    // Function to handle mutations
+    function handleMutations(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList' || mutation.type === 'subtree') {
+                const listing = mutation.target.closest('.lot-grid-column, .lot-details');
+                if (listing) {
+                    updateListing(listing);
+                }
+            }
         });
+    }
+
+    // Create a MutationObserver
+    const observer = new MutationObserver(handleMutations);
+
+    // Configuration for the observer
+    const config = { childList: true, subtree: true, characterData: true };
+
+    // Start observing the document body
+    observer.observe(document.body, config);
+
+    // Initial processing of existing listings
+    function initialProcess() {
+        const listings = document.querySelectorAll('.lot-grid-column, .lot-details');
+        if (listings.length > 0) {
+            listings.forEach(updateListing);
+        } else {
+            // If listings are not found, try again after a short delay
+            setTimeout(initialProcess, 500);
+        }
+    }
+
+    initialProcess();
 }
 
-// Function to handle input events on the maximumBid input field
 function handleMaximumBidInput() {
-    // Get the input field for maximum bid
-    var bidInput = document.getElementById('bid-panel-form');
-    
-    if (bidInput) {  
-        var maximumBidInput = document.getElementById('maximumBid');
-
-      // Add event listener for input event
-    maximumBidInput.addEventListener('input', function() {
-        // Get the value entered in the input field
-        var bidValue = parseFloat(maximumBidInput.value);
+    function updateAdjustedPrice(input) {
+        var bidValue = parseFloat(input.value);
+        var adjustedPriceDisplay = document.getElementById('adjustedPriceDisplay');
         
-        // Check if the entered value is a valid number
         if (!isNaN(bidValue) && bidValue !== 0) {
-            // Calculate adjusted price
             var adjustedPrice = calculateAdjustedPrice(bidValue);
             
-            // Check if the adjusted price display already exists
-            var adjustedPriceDisplay = document.getElementById('adjustedPriceDisplay');
             if (!adjustedPriceDisplay) {
-                // Create a new div to display the adjusted price
                 adjustedPriceDisplay = document.createElement('div');
                 adjustedPriceDisplay.id = 'adjustedPriceDisplay';
-                adjustedPriceDisplay.classList.add('field'); // Add field class to match the existing structure
+                adjustedPriceDisplay.classList.add('field');
                 var bidForm = document.getElementById('bid-panel-form');
                 if (bidForm) {
-                    // Insert the adjusted price display after the bid form
                     bidForm.insertAdjacentElement('afterend', adjustedPriceDisplay);
                 }
             }
             
-            // Update the content of the adjusted price display div
             adjustedPriceDisplay.innerHTML = `
             <div class="ui form timedbid-panel-form">
-            <div class="inline fields">
-                <div class="ten wide field">
-                    <div class="ui right labeled input">
-                        <p>This bid will actually cost you ${adjustedPrice.toFixed(2)} GBP</p>
+                <div class="inline fields">
+                    <div class="ten wide field">
+                        <div class="ui right labeled input">
+                            <p>This bid will actually cost you ${adjustedPrice.toFixed(2)} GBP</p>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
             `;
-        } else {
-            // If the entered value is not a valid number or is 0, remove the adjusted price display
-            var adjustedPriceDisplay = document.getElementById('adjustedPriceDisplay');
-            if (adjustedPriceDisplay) {
-                adjustedPriceDisplay.parentNode.removeChild(adjustedPriceDisplay);
-            }
+        } else if (adjustedPriceDisplay) {
+            adjustedPriceDisplay.parentNode.removeChild(adjustedPriceDisplay);
         }
-    });
-};
+    }
 
+    function handleMutations(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
+                updateAdjustedPrice(mutation.target);
+            }
+        });
+    }
+
+    const observer = new MutationObserver(handleMutations);
+    const config = { attributes: true, attributeFilter: ['value'] };
+
+    function initMaximumBidInput() {
+        const maximumBidInput = document.getElementById('maximumBid');
+        if (maximumBidInput) {
+            observer.observe(maximumBidInput, config);
+            maximumBidInput.addEventListener('input', function() {
+                updateAdjustedPrice(this);
+            });
+            // Initial update
+            updateAdjustedPrice(maximumBidInput);
+        } else {
+            // If the input is not found, try again after a short delay
+            setTimeout(initMaximumBidInput, 500);
+        }
+    }
+
+    initMaximumBidInput();
 }
 
-// Call the function to handle input events on maximumBid input field
-handleMaximumBidInput();
-
-
-// Call the function when the page loads
-window.addEventListener('load', processAuctionListings);
+// Call the functions when the page loads
+window.addEventListener('load', function() {
+    processAuctionListings();
+    handleMaximumBidInput();
+});
